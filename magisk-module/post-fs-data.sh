@@ -30,19 +30,38 @@ loop_setup() {
   if [ $? -ne 0 ]; then
      unset LOOPDEV
      echo "loop_setup: losetup failed for $1" >>/cache/overlayfs.log
+     return 1
+  fi
+  # wait for ueventd to create loop block device
+  local i=0
+  while [ $i -lt 10 ]; do
+      [ -b "$LOOPDEV" ] && break
+      sleep 0.1
+      i=$((i + 1))
+  done
+  if [ ! -b "$LOOPDEV" ]; then
+      local minor=${LOOPDEV#/dev/block/loop}
+      mknod "$LOOPDEV" b 7 "$minor" 2>>/cache/overlayfs.log
   fi
 }
 
 if [ -f "$OVERLAYDIR" ]; then
     loop_setup /data/adb/overlay
     if [ ! -z "$LOOPDEV" ]; then
-        if mount -o rw -t ext4 "$LOOPDEV" "$OVERLAYMNT"; then
+        if mount -o rw -t ext4 "$LOOPDEV" "$OVERLAYMNT" 2>>/cache/overlayfs.log; then
             ln "$LOOPDEV" /dev/block/overlayfs_loop
             echo "overlay image mounted successfully on $OVERLAYMNT" >>/cache/overlayfs.log
         else
-            echo "mount failed: could not mount $LOOPDEV on $OVERLAYMNT (errno=$?)" >>/cache/overlayfs.log
-            /system/bin/losetup -d "$LOOPDEV" 2>/dev/null
-            unset LOOPDEV
+            echo "mount failed first attempt: trying e2fsck recovery on $LOOPDEV" >>/cache/overlayfs.log
+            /system/bin/e2fsck -p -f "$LOOPDEV" >>/cache/overlayfs.log 2>&1
+            if mount -o rw -t ext4 "$LOOPDEV" "$OVERLAYMNT" 2>>/cache/overlayfs.log; then
+                ln "$LOOPDEV" /dev/block/overlayfs_loop
+                echo "overlay image repaired and mounted successfully on $OVERLAYMNT" >>/cache/overlayfs.log
+            else
+                echo "mount failed: could not mount $LOOPDEV on $OVERLAYMNT (errno=$?)" >>/cache/overlayfs.log
+                /system/bin/losetup -d "$LOOPDEV" 2>/dev/null
+                unset LOOPDEV
+            fi
         fi
     else
         echo "loop_setup failed: no loop device available for $OVERLAYDIR" >>/cache/overlayfs.log

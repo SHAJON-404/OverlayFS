@@ -246,7 +246,12 @@ int setenforce(bool mode) {
 
 int getfilecon(const char *path, char **con) {
     *con = (char*)malloc(sizeof(char)*256);
-    return getxattr(path, "security.selinux", *con, sizeof(char)*255);
+    int ret = getxattr(path, "security.selinux", *con, sizeof(char)*255);
+    if (ret < 0) {
+        free(*con);
+        *con = nullptr;
+    }
+    return ret;
 }
 
 int setfilecon(const char *path, const char *con) {
