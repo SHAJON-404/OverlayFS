@@ -1,6 +1,6 @@
 {
-  "version": "v3.2.3",
-  "versionCode": 30203,
-  "zipUrl": "https://github.com/SHAJON-404/OverlayFS/releases/latest/download/magisk_overlayfs.zip",
+  "version": "v3.2.4",
+  "versionCode": 30204,
+  "zipUrl": "https://github.com/SHAJON-404/OverlayFS/releases/latest/download/OverlayFS_universal_v3.2.4.zip",
   "changelog": "https://raw.githubusercontent.com/SHAJON-404/OverlayFS/main/README.md"
 }

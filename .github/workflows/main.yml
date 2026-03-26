@@ -37,13 +37,13 @@ jobs:
         sudo apt-get update && sudo apt-get install -y zip jq
         chmod 777 ./build.sh
         ./build.sh
-        mv out/magisk-module-release.zip out/magisk_overlayfs.zip
+        mv out/magisk-module-release.zip "out/OverlayFS_universal_${VERSION}.zip"
         
     - name: Upload release
       uses: actions/upload-artifact@v4
       with:
         name: magisk-overlayfs-release
-        path: out/magisk_overlayfs.zip
+        path: out/OverlayFS_universal_${{ steps.extract_info.outputs.version }}.zip
         
     - name: Publish Release
       if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
@@ -51,7 +51,7 @@ jobs:
       with:
         tag_name: ${{ steps.extract_info.outputs.version }}
         name: "Release ${{ steps.extract_info.outputs.version }}"
-        files: out/magisk_overlayfs.zip
+        files: out/OverlayFS_universal_${{ steps.extract_info.outputs.version }}.zip
         body: |
           Magical OverlayFS Module ${{ steps.extract_info.outputs.version }}
           Rewrite and bug fixed by SHAJON-404

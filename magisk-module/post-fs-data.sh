@@ -48,42 +48,54 @@ create_overlay_image() {
     echo "creating new 2GB ext4 image at $OVERLAYDIR" >>/cache/overlayfs.log
     rm -f "$OVERLAYDIR"
     dd if=/dev/zero of="$OVERLAYDIR" bs=1048576 count=2048 >>/cache/overlayfs.log 2>&1
+    # Ensure wide compatibility and disable features not supported by all Android kernels
+    /system/bin/mke2fs -O ^has_journal -t ext4 -b 4096 "$OVERLAYDIR" >>/cache/overlayfs.log 2>&1 || \
+    /system/bin/mkfs.ext4 -O ^has_journal -t ext4 -b 4096 -F "$OVERLAYDIR" >>/cache/overlayfs.log 2>&1 || \
     /system/bin/mkfs.ext4 -F "$OVERLAYDIR" >>/cache/overlayfs.log 2>&1
+    sync
 }
 
 try_mount_overlay() {
     loop_setup /data/adb/overlay
     [ -z "$LOOPDEV" ] && return 1
 
-    if mount -o rw -t ext4 "$LOOPDEV" "$OVERLAYMNT" 2>>/cache/overlayfs.log; then
+    mount -o rw -t ext4 "$LOOPDEV" "$OVERLAYMNT" 2>>/cache/overlayfs.log
+    local err=$?
+    if [ $err -eq 0 ]; then
         ln -f "$LOOPDEV" /dev/block/overlayfs_loop
         echo "overlay image mounted successfully on $OVERLAYMNT" >>/cache/overlayfs.log
         return 0
     fi
 
     # First attempt failed — try e2fsck repair
-    echo "mount failed first attempt: trying e2fsck recovery on $LOOPDEV" >>/cache/overlayfs.log
+    echo "mount failed first attempt ($err): trying e2fsck recovery on $LOOPDEV" >>/cache/overlayfs.log
     /system/bin/e2fsck -p -f "$LOOPDEV" >>/cache/overlayfs.log 2>&1
-    if mount -o rw -t ext4 "$LOOPDEV" "$OVERLAYMNT" 2>>/cache/overlayfs.log; then
+    
+    mount -o rw -t ext4 "$LOOPDEV" "$OVERLAYMNT" 2>>/cache/overlayfs.log
+    err=$?
+    if [ $err -eq 0 ]; then
         ln -f "$LOOPDEV" /dev/block/overlayfs_loop
         echo "overlay image repaired and mounted successfully on $OVERLAYMNT" >>/cache/overlayfs.log
         return 0
     fi
 
     # e2fsck could not recover — superblock corrupt, recreate image
-    echo "e2fsck recovery failed: superblock corrupt, recreating ext4 image" >>/cache/overlayfs.log
+    echo "e2fsck recovery failed ($err): superblock corrupt, recreating ext4 image" >>/cache/overlayfs.log
     /system/bin/losetup -d "$LOOPDEV" 2>/dev/null
     unset LOOPDEV
     create_overlay_image
     loop_setup /data/adb/overlay
     [ -z "$LOOPDEV" ] && return 1
-    if mount -o rw -t ext4 "$LOOPDEV" "$OVERLAYMNT" 2>>/cache/overlayfs.log; then
+    
+    mount -o rw -t ext4 "$LOOPDEV" "$OVERLAYMNT" 2>>/cache/overlayfs.log
+    err=$?
+    if [ $err -eq 0 ]; then
         ln -f "$LOOPDEV" /dev/block/overlayfs_loop
         echo "fresh overlay image created and mounted on $OVERLAYMNT" >>/cache/overlayfs.log
         return 0
     fi
 
-    echo "mount failed: could not mount $LOOPDEV on $OVERLAYMNT (errno=$?)" >>/cache/overlayfs.log
+    echo "mount failed: could not mount $LOOPDEV on $OVERLAYMNT (errno=$err)" >>/cache/overlayfs.log
     /system/bin/losetup -d "$LOOPDEV" 2>/dev/null
     unset LOOPDEV
     return 1
