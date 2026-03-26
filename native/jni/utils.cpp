@@ -50,7 +50,7 @@ bool mkdir_ensure(const char *path, int mode) {
 }
 
 int mkdirs(const char *path, int mode) {
-    char s[strlen(path) + 1];
+    char *s = (char*)malloc(strlen(path) + 1);
     s[0] = path[0];
     int a = 1, b = 1;
     while (a <= strlen(path)) {
@@ -63,8 +63,10 @@ int mkdirs(const char *path, int mode) {
     char *ss = s;
     while (ss[0] == '/')
         ss++;
-    if (ss[0] == '\0')
+    if (ss[0] == '\0') {
+        free(s);
         return 0;
+    }
     while ((ss = strchr(ss, '/')) != nullptr) {
         ss[0] = '\0';
         mkdir(s, mode);
@@ -72,12 +74,13 @@ int mkdirs(const char *path, int mode) {
         ss++;
     }
     int ret = mkdir(s, mode);
+    free(s);
     return ret;
 }
 
 char *dirname2(const char *path) {
-    char s[strlen(path) + 1];
-    char p[strlen(path) + 1];
+    char *s = (char*)malloc(strlen(path) + 1);
+    char *p = (char*)malloc(strlen(path) + 1);
     s[0] = path[0];
     int a = 1, b = 1;
     while (a <= strlen(path)) {
@@ -90,15 +93,21 @@ char *dirname2(const char *path) {
     char *ss = s;
     while (ss[0] == '/')
         ss++;
-    if (ss[0] == '\0')
+    if (ss[0] == '\0') {
+        free(s);
+        free(p);
         return nullptr;
+    }
     while ((ss = strchr(ss, '/')) != nullptr) {
         ss[0] = '\0';
         strcpy(p, s);
         ss[0] = '/';
         ss++;
     }
-    return strdup(p);
+    char *ret = strdup(p);
+    free(s);
+    free(p);
+    return ret;
 }
 
 int getmod(const char *file) {
