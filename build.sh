@@ -35,4 +35,6 @@ EOF
     fi
 done
 
-zip -r9 out/magisk-module-release.zip out/magisk-module
+pushd out/magisk-module
+zip -r9 ../magisk-module-release.zip .
+popd
