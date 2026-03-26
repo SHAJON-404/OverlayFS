@@ -4,4 +4,4 @@ author=HuskyDG, SHAJON-404
 version=v3.2.3
 versionCode=30203
 description=Use OverlayFS to make read-only system partitions become read-write partitions. OverlayFS MUST be supported by kernel!
-updateJson=https://github.com/SHAJON-404/OverlayFS/raw/main/update.json
+updateJson=https://raw.githubusercontent.com/SHAJON-404/OverlayFS/refs/heads/main/update.json
