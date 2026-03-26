@@ -24,7 +24,7 @@ jobs:
       id: extract_info
       run: |
         VERSION=$(jq -r '.version' update.json)
-        echo "VERSION=$VERSION" >> $GITHUB_ENV
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
 
     - name: Setup Android NDK
       run: |
@@ -49,11 +49,11 @@ jobs:
       if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: ${{ env.VERSION }}
-        name: "Release ${{ env.VERSION }}"
+        tag_name: ${{ steps.extract_info.outputs.version }}
+        name: "Release ${{ steps.extract_info.outputs.version }}"
         files: out/magisk_overlayfs.zip
         body: |
-          Magical OverlayFS Module ${{ env.VERSION }}
+          Magical OverlayFS Module ${{ steps.extract_info.outputs.version }}
           Rewrite and bug fixed by SHAJON-404
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
