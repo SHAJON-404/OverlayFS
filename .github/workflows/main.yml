@@ -3,16 +3,19 @@ name: Build Magisk module
 on:
   workflow_dispatch:
   push:
+    branches: [ "main", "master" ]
   pull_request:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     if: ${{ !startsWith(github.event.head_commit.message, '[skip ci]') }}
+    permissions:
+      contents: write
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         submodules: 'recursive'
         fetch-depth: 0
@@ -23,10 +26,24 @@ jobs:
     - name: Build
       id: build
       run: |
+        sudo apt-get update && sudo apt-get install -y zip jq
         chmod 777 ./build.sh
         ./build.sh
+        mv out/magisk-module-release.zip out/magisk_overlayfs.zip
     - name: Upload release
       uses: actions/upload-artifact@v3
       with:
         name: magisk-overlayfs-release
-        path: out/magisk-module
+        path: out/magisk_overlayfs.zip
+    - name: Publish Release
+      if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: "v3.2.3"
+        name: "Release v3.2.3"
+        files: out/magisk_overlayfs.zip
+        body: |
+          Magical OverlayFS Module v3.2.3
+          Rewrite and bug fixed by SHAJON-404
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
