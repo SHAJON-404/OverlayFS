@@ -37,7 +37,7 @@ jobs:
         sudo apt-get update && sudo apt-get install -y zip jq
         chmod 777 ./build.sh
         ./build.sh
-        mv out/magisk-module-release.zip "out/OverlayFS_universal_${VERSION}.zip"
+        mv out/magisk-module-release.zip "out/OverlayFS_universal_${{ steps.extract_info.outputs.version }}.zip"
         
     - name: Upload release
       uses: actions/upload-artifact@v4
